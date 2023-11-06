@@ -6,7 +6,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Question service: No tests yet, add tests\" && exit 0"
+    "test": "echo \"Question service: No tests yet, add tests\" && exit 0",
+    "dev": "USER_SERVICE_URL=http://localhost:3001 QUESTION_SERVICE_URL=http://localhost:3002 node server.js"
 },
   "dependencies": {
     "amqplib": "^0.10.3",

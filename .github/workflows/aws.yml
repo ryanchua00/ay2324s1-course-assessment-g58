@@ -1,0 +1,142 @@
+name: Deploy to Amazon ECR
+
+on:
+  push:
+    branches: [ "main", "staging" ]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: latest
+      run: |
+        # Build a docker container and
+        # push it to ECR so that it can
+        # be deployed to ECS.
+        docker-compose build
+
+        # Push to ECR
+          # Push collaboration container to ecr
+          docker tag ay2324s1-course-assessment-g58-collaboration:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:$IMAGE_TAG
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:$IMAGE_TAG
+          echo "push image=collaboration" >> $GITHUB_OUTPUT
+
+          # Push workers container to ecr
+          docker tag ay2324s1-course-assessment-g58-workers-1:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:workers-latest
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:workers-latest
+          echo "push image=workers" >> $GITHUB_OUTPUT
+
+          # Push server container to ecr
+          docker tag ay2324s1-course-assessment-g58-server-1:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:server-latest
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:server-latest
+          echo "push image=server" >> $GITHUB_OUTPUT
+
+          # Push db container to ecr
+          docker tag ay2324s1-course-assessment-g58-db-1:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:db-latest
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:db-latest
+          echo "push image=db" >> $GITHUB_OUTPUT
+
+          # Push redis container to ecr
+          docker tag ay2324s1-course-assessment-g58-redis-1:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:redis-latest
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:redis-latest
+          echo "push image=redis" >> $GITHUB_OUTPUT
+
+          # Push rabbitmq container to ecr
+          docker tag ay2324s1-course-assessment-g58-rabbitmq-1:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:rabbitmq-latest
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-collaboration:rabbitmq-latest
+          echo "push image=rabbitmq" >> $GITHUB_OUTPUT
+
+          # Push matching-service container to ecr
+          docker tag ay2324s1-course-assessment-g58-matching:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-matching:$IMAGE_TAG
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-matching:$IMAGE_TAG
+          echo "push image=matching" >> $GITHUB_OUTPUT
+
+          # Push question-service container to ecr
+          docker tag ay2324s1-course-assessment-g58-questions:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-questions:$IMAGE_TAG
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-questions:$IMAGE_TAG
+          echo "push image=questions" >> $GITHUB_OUTPUT
+
+          # Push user-service container to ecr
+          docker tag ay2324s1-course-assessment-g58-users:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-users:$IMAGE_TAG
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-users:$IMAGE_TAG
+          echo "push image=users" >> $GITHUB_OUTPUT
+
+          # Push email-service container to ecr
+          docker tag ay2324s1-course-assessment-g58-email:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-email:$IMAGE_TAG
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-email:$IMAGE_TAG
+          echo "push image=email" >> $GITHUB_OUTPUT
+
+          # Push ai-service container to ecr
+          docker tag ay2324s1-course-assessment-g58-ai:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-ai:$IMAGE_TAG
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-ai:$IMAGE_TAG
+          echo "push image=ai" >> $GITHUB_OUTPUT
+
+          # Push gateway container to ecr
+          docker build -t ay2324s1-course-assessment-g58-gateway ./gateway
+          docker tag ay2324s1-course-assessment-g58-gateway:$IMAGE_TAG $ECR_REGISTRY/ay2324s1-course-assessment-g58-gateway:$IMAGE_TAG
+          docker push $ECR_REGISTRY/ay2324s1-course-assessment-g58-gateway:$IMAGE_TAG
+          echo "push image=gateway" >> $GITHUB_OUTPUT
+
+      - name: Deploy Amazon ECS user-service task
+        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+        with:
+          task-definition: arn:aws:ecs:ap-southeast-1:256686173106:task-definition/peerprep-user-service:1
+          service: users
+          cluster: peerprep_t
+          wait-for-service-stability: true
+
+      - name: Deploy Amazon ECS question-service task
+        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+        with:
+          task-definition: arn:aws:ecs:ap-southeast-1:256686173106:task-definition/peerprep-question-service:3
+          service: questions
+          cluster: peerprep_t
+          wait-for-service-stability: true
+
+      - name: Deploy Amazon ECS matching-service task
+        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+        with:
+          task-definition: arn:aws:ecs:ap-southeast-1:256686173106:task-definition/peerprep-matching-service:3
+          service: matching
+          cluster: peerprep_t
+          wait-for-service-stability: true
+
+      - name: Deploy Amazon ECS collaboration-service task
+        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+        with:
+          task-definition: arn:aws:ecs:ap-southeast-1:256686173106:task-definition/peerprep-collaboration-service:1
+          service: collaboration
+          cluster: peerprep_t
+          wait-for-service-stability: true
+
+      - name: Deploy Amazon ECS api-gateway task
+        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+        with:
+          task-definition: arn:aws:ecs:ap-southeast-1:256686173106:task-definition/peerprep-api-gateway:8
+          service: api-gateway
+          cluster: peerprep_t
+          wait-for-service-stability: true

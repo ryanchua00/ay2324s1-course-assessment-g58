@@ -38,11 +38,9 @@ serviceEndpoints:
     # see: http://www.express-gateway.io/docs/configuration/gateway.config.yml/serviceEndpoints
     # For deployment, uncomment the environment variables and comment the localhost urls.
     userService:
-        url: "http://localhost:3001"
-        # url: "${USER_SERVER_URL}"
+        url: "${USER_SERVICE_URL}"
     questionService:
-        url: "http://localhost:3002"
-        # url: "${QUESTION_SERVICE_URL}"
+        url: "${QUESTION_SERVICE_URL}"
     # compilerService:
     #     url: "http://localhost:3006"
     # aiService:
